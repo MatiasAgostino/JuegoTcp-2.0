@@ -8,7 +8,7 @@ public class AutoNpc extends Auto {
 		this.coordenada = coordenadas;
 		this.velocidadActual = vConstante;
 		this.velocidadMax = vConstante;
-		this.estaVivo = true;
+		this.estaVivo = coordenadas.getX() != 0;
 	}
 
 	@Override

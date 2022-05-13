@@ -5,16 +5,19 @@ import coordenada.Coordenada;
 public class AutoJugador extends Auto {
 	private String username;
 	private int score;
+	private double posMeta;
 	private int aumentadorScore;
-	private boolean puedeMoverse;
 	private int habilidadesRestantes;
+	private boolean puedeMoverse;
 	private boolean habilidadActiva;
+	private boolean llegoALaMeta;
+	private double vMAXIMA_INCIAL;
 	private final double VELOCIDAD_X = 1.5;
 
-	public AutoJugador(double aceleracion, double velocidadInicial, double velocidadMaxima, int habilidadesRestantes) {
+	public AutoJugador(double aceleracion, double velocidadMaxima, int habilidadesRestantes) {
 		this.aceleracion = aceleracion;
-		this.velocidadActual = velocidadInicial;
 		this.velocidadMax = velocidadMaxima;
+		this.vMAXIMA_INCIAL = velocidadMaxima;
 		this.estaVivo = true;
 		this.puedeMoverse = true;
 		this.habilidadesRestantes = habilidadesRestantes;
@@ -30,17 +33,21 @@ public class AutoJugador extends Auto {
 		}
 
 		if (movIzquierda) {
-			if (this.coordenada.getX() - this.VELOCIDAD_X > 0)
-				this.coordenada.setX(this.coordenada.getX() - this.VELOCIDAD_X);
-			else
-				this.estaMuerto();
+			if (this.coordenada.getY() != 0) {
+				if (this.coordenada.getX() - this.VELOCIDAD_X > 0)
+					this.coordenada.setX(this.coordenada.getX() - this.VELOCIDAD_X);
+				else
+					this.estaMuerto();
+			}
 		}
 
 		if (movDerecha) {
-			if (this.coordenada.getX() + this.VELOCIDAD_X < 8)
-				this.coordenada.setX(this.coordenada.getX() + this.VELOCIDAD_X);
-			else
-				this.estaMuerto();
+			if (this.coordenada.getY() != 0) {
+				if (this.coordenada.getX() + this.VELOCIDAD_X < 7)
+					this.coordenada.setX(this.coordenada.getX() + this.VELOCIDAD_X);
+				else
+					this.estaMuerto();
+			}
 		}
 
 		if (movArriba) {
@@ -50,20 +57,27 @@ public class AutoJugador extends Auto {
 			if (this.velocidadActual + this.aceleracion <= this.velocidadMax) {
 				this.velocidadActual += this.aceleracion;
 				this.coordenada.setY(this.coordenada.getY() + this.velocidadActual);
+				if (this.coordenada.getY() >= this.posMeta)
+					this.llegoALaMeta = true;
 			} else {
 				this.velocidadActual = this.velocidadMax;
 				this.coordenada.setY(this.coordenada.getY() + this.velocidadActual);
+				if (this.coordenada.getY() >= this.posMeta)
+					this.llegoALaMeta = true;
 			}
 		}
 
 		if (movAbajo || !movArriba) {
 			// Frenado
 			if (this.aumentadorScore - 1 > 0)
-				this.aumentadorScore -= 1;
+				this.aumentadorScore--;
 			else
 				this.aumentadorScore = 0;
 
-			this.velocidadActual -= this.aceleracion;
+			if (this.velocidadActual - this.aceleracion > 0)
+				this.velocidadActual -= this.aceleracion;
+			else
+				this.velocidadActual = 0;
 		}
 
 		return true;
@@ -73,7 +87,7 @@ public class AutoJugador extends Auto {
 		if (this.habilidadesRestantes > 0 && !this.habilidadActiva) {
 			this.habilidadActiva = true;
 			this.habilidadesRestantes--;
-			
+
 			return true;
 		}
 
@@ -81,8 +95,47 @@ public class AutoJugador extends Auto {
 	}
 
 	public boolean contactar(AutoNpc npc) {
-		if(!this.habilidadActiva) {
-			if (npc.coordenada.getX() < this.coordenada.getX()) {
+		if (this.coordenada.getDistanciaA(npc.coordenada) < 2) {
+			if (!this.habilidadActiva) {
+				if (npc.coordenada.getX() < this.coordenada.getX()) {
+					if (this.coordenada.getX() + 2 < 7) {
+						// Efecto de derrape
+						this.puedeMoverse = false;
+						this.coordenada.setX(this.coordenada.getX() + 2);
+					} else {
+						// Efecto de derrape
+						this.estaMuerto();
+					}
+				}
+
+				if (npc.coordenada.getX() >= this.coordenada.getX()) {
+					if (this.coordenada.getX() - 2 > 0) {
+						// Efecto de derrape
+						this.puedeMoverse = false;
+						this.coordenada.setX(this.coordenada.getX() - 2);
+					} else {
+						// Efecto de derrape
+						this.estaMuerto();
+					}
+				}
+			}
+
+			boolean choco = this.habilidadActiva;
+
+			if (this.habilidadActiva)
+				this.habilidadActiva = false;
+
+			npc.recibirContactoDe(this);
+
+			return choco;
+		}
+
+		return false;
+	}
+
+	public void contactar(AutoJugador otroJugador) {
+		if (this.coordenada.getDistanciaA(otroJugador.coordenada) < 2) {
+			if (otroJugador.coordenada.getX() <= this.coordenada.getX()) {
 				if (this.coordenada.getX() + 2 < 7) {
 					// Efecto de derrape
 					this.puedeMoverse = false;
@@ -93,7 +146,7 @@ public class AutoJugador extends Auto {
 				}
 			}
 
-			if (npc.coordenada.getX() > this.coordenada.getX()) {
+			if (otroJugador.coordenada.getX() > this.coordenada.getX()) {
 				if (this.coordenada.getX() - 2 > 0) {
 					// Efecto de derrape
 					this.puedeMoverse = false;
@@ -103,61 +156,44 @@ public class AutoJugador extends Auto {
 					this.estaMuerto();
 				}
 			}
-		}
-		
-		boolean choco = this.habilidadActiva;
-		
-		if(this.habilidadActiva)
-			this.habilidadActiva = false;
-		
-		npc.recibirContactoDe(this);
-		
-		return choco;
-	}
 
-	public void contactar(AutoJugador otroJugador) {
-		if (otroJugador.coordenada.getX() < this.coordenada.getX()) {
-			if (this.coordenada.getX() + 2 < 7) {
-				// Efecto de derrape
-				this.puedeMoverse = false;
-				this.coordenada.setX(this.coordenada.getX() + 2);
-			} else {
-				// Efecto de derrape
-				this.estaMuerto();
-			}
+			otroJugador.recibirContactoDe(this);
 		}
-
-		if (otroJugador.coordenada.getX() > this.coordenada.getX()) {
-			if (this.coordenada.getX() - 2 > 0) {
-				// Efecto de derrape
-				this.puedeMoverse = false;
-				this.coordenada.setX(this.coordenada.getX() - 2);
-			} else {
-				// Efecto de derrape
-				this.estaMuerto();
-			}
-		}
-
-		otroJugador.recibirContactoDe(this);
 	}
 
 	public void contactar(Obstaculo obstaculo) {
-		if (this.coordenada.getX() + obstaculo.getDesplazamiento() < 8) {
-			// Efecto de derrape
-			this.coordenada.setX(this.coordenada.getX() + obstaculo.getDesplazamiento());
-		} else {
-			// Efecto de derrape
-			this.estaMuerto();
-		}
+		if (this.coordenada.getDistanciaA(obstaculo.coordenada) < 2) {
+			if (this.coordenada.getX() > obstaculo.getCoordenada().getX()) {
+				if (this.coordenada.getX() + obstaculo.getDesplazamiento() < 7) {
+					// Efecto de derrape
+					this.coordenada.setX(this.coordenada.getX() + obstaculo.getDesplazamiento());
+				} else {
+					// Efecto de derrape
+					this.estaMuerto();
+				}
+			}
 
-		obstaculo.recibirContactoDe(this);
+			if (this.coordenada.getX() <= obstaculo.getCoordenada().getX()) {
+				if (this.coordenada.getX() - obstaculo.getDesplazamiento() > 0) {
+					// Efecto de derrape
+					this.coordenada.setX(this.coordenada.getX() - obstaculo.getDesplazamiento());
+				} else {
+					// Efecto de derrape
+					this.estaMuerto();
+				}
+			}
+
+			obstaculo.recibirContactoDe(this);
+		}
 	}
 
 	public void contactar(PowerUp powerUp) {
-		this.velocidadMax += powerUp.getPower();
-		this.velocidadActual = this.velocidadMax;
+		if (this.coordenada.getDistanciaA(powerUp.coordenada) < 2) {
+			this.velocidadMax += powerUp.getPower();
+			this.velocidadActual = this.velocidadMax;
 
-		powerUp.recibirContactoDe(this);
+			powerUp.recibirContactoDe(this);
+		}
 	}
 
 	@Override
@@ -185,9 +221,15 @@ public class AutoJugador extends Auto {
 		}
 	}
 
+	private void setearValores() {
+		this.velocidadActual = 0;
+		this.velocidadMax = this.vMAXIMA_INCIAL;
+		this.score = 0;
+	}
+
 	private void estaMuerto() {
 		this.choqueConMapa();
-		this.score = 0;
+		this.setearValores();
 	}
 
 	public void aumentarScore() {
@@ -198,6 +240,7 @@ public class AutoJugador extends Auto {
 		if (!this.estaVivo) {
 			this.estaVivo = true;
 			this.coordenada = coordenada;
+			this.setearValores();
 
 			return true;
 		}
@@ -209,7 +252,28 @@ public class AutoJugador extends Auto {
 		return velocidadActual;
 	}
 
+	public double getVelocidadMaxima() {
+		return this.velocidadMax;
+	}
+
+	public int getScore() {
+		return this.score;
+	}
+
 	public void setVelocidadActual(double velocidad) {
 		velocidadActual = velocidad;
+	}
+
+	public void setPosicion(double x, double y) {
+		this.coordenada.setX(x);
+		this.coordenada.setY(y);
+	}
+
+	public void setPosMeta(double y) {
+		this.posMeta = y;
+	}
+
+	public boolean finalizo() {
+		return this.llegoALaMeta;
 	}
 }
