@@ -10,5 +10,4 @@ public class TestAuto {
 	public void test() {
 		fail("Not yet implemented");
 	}
-
 }

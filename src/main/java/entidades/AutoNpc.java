@@ -25,7 +25,7 @@ public class AutoNpc extends Auto {
 	@Override
 	public void recibirContactoDe(AutoJugador jugador) {
 		if (jugador.coordenada.getX() < this.coordenada.getX()) {
-			if (this.coordenada.getX() + 2 < 8) {
+			if (this.coordenada.getX() + 2 < 7) {
 				// Efecto de derrape
 				this.coordenada.setX(this.coordenada.getX() + 2);
 			} else {

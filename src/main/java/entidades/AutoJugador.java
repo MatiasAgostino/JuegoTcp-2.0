@@ -7,14 +7,17 @@ public class AutoJugador extends Auto {
 	private int score;
 	private int aumentadorScore;
 	private boolean puedeMoverse;
+	private int habilidadesRestantes;
+	private boolean habilidadActiva;
 	private final double VELOCIDAD_X = 1.5;
 
-	public AutoJugador(double aceleracion, double velocidadInicial, double velocidadMaxima) {
+	public AutoJugador(double aceleracion, double velocidadInicial, double velocidadMaxima, int habilidadesRestantes) {
 		this.aceleracion = aceleracion;
 		this.velocidadActual = velocidadInicial;
 		this.velocidadMax = velocidadMaxima;
 		this.estaVivo = true;
 		this.puedeMoverse = true;
+		this.habilidadesRestantes = habilidadesRestantes;
 	}
 
 	@Override
@@ -66,35 +69,55 @@ public class AutoJugador extends Auto {
 		return true;
 	}
 
-	public void contactar(AutoNpc npc) {
-		if (npc.coordenada.getX() < this.coordenada.getX()) {
-			if (this.coordenada.getX() + 2 < 8) {
-				// Efecto de derrape
-				this.puedeMoverse = false;
-				this.coordenada.setX(this.coordenada.getX() + 2);
-			} else {
-				// Efecto de derrape
-				this.estaMuerto();
-			}
+	public boolean activarHabilidad(boolean activacion) {
+		if (this.habilidadesRestantes > 0 && !this.habilidadActiva) {
+			this.habilidadActiva = true;
+			this.habilidadesRestantes--;
+			
+			return true;
 		}
 
-		if (npc.coordenada.getX() > this.coordenada.getX()) {
-			if (this.coordenada.getX() - 2 > 0) {
-				// Efecto de derrape
-				this.puedeMoverse = false;
-				this.coordenada.setX(this.coordenada.getX() - 2);
-			} else {
-				// Efecto de derrape
-				this.estaMuerto();
+		return false;
+	}
+
+	public boolean contactar(AutoNpc npc) {
+		if(!this.habilidadActiva) {
+			if (npc.coordenada.getX() < this.coordenada.getX()) {
+				if (this.coordenada.getX() + 2 < 7) {
+					// Efecto de derrape
+					this.puedeMoverse = false;
+					this.coordenada.setX(this.coordenada.getX() + 2);
+				} else {
+					// Efecto de derrape
+					this.estaMuerto();
+				}
+			}
+
+			if (npc.coordenada.getX() > this.coordenada.getX()) {
+				if (this.coordenada.getX() - 2 > 0) {
+					// Efecto de derrape
+					this.puedeMoverse = false;
+					this.coordenada.setX(this.coordenada.getX() - 2);
+				} else {
+					// Efecto de derrape
+					this.estaMuerto();
+				}
 			}
 		}
-
+		
+		boolean choco = this.habilidadActiva;
+		
+		if(this.habilidadActiva)
+			this.habilidadActiva = false;
+		
 		npc.recibirContactoDe(this);
+		
+		return choco;
 	}
 
 	public void contactar(AutoJugador otroJugador) {
 		if (otroJugador.coordenada.getX() < this.coordenada.getX()) {
-			if (this.coordenada.getX() + 2 < 8) {
+			if (this.coordenada.getX() + 2 < 7) {
 				// Efecto de derrape
 				this.puedeMoverse = false;
 				this.coordenada.setX(this.coordenada.getX() + 2);
@@ -140,7 +163,7 @@ public class AutoJugador extends Auto {
 	@Override
 	public void recibirContactoDe(AutoJugador chocador) {
 		if (chocador.coordenada.getX() < this.coordenada.getX()) {
-			if (this.coordenada.getX() + 2 < 8) {
+			if (this.coordenada.getX() + 2 < 7) {
 				// Efecto de derrape
 				this.puedeMoverse = false;
 				this.coordenada.setX(this.coordenada.getX() + 2);
